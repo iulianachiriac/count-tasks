@@ -1,0 +1,7 @@
+.sfdx/
+.vscode/
+.sf/
+src/
+.project
+.salesforce
+.settings

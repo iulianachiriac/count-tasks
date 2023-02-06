@@ -1,11 +1,9 @@
-trigger Count on Task (after insert, after update, after delete) {
-     
-    if (trigger.isAfter){
-		if( trigger.isInsert || trigger.isUpdate) 
-		{
-		 	TaskTriggerHandler.updateRelatedAccounts(Trigger.new);
-        } else if (trigger.isDelete) {
-            TaskTriggerHandler.updateRelatedAccounts(Trigger.old);
-        }
-	}
+trigger Count on Task(after insert, after update, after delete) {
+  if (Trigger.isAfter) {
+    if (Trigger.isInsert || Trigger.isUpdate) {
+      TaskTriggerHandler.updateRelatedAccounts(Trigger.new);
+    } else if (Trigger.isDelete) {
+      TaskTriggerHandler.updateRelatedAccounts(Trigger.old);
+    }
+  }
 }

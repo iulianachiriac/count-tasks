@@ -7,9 +7,11 @@ public without sharing class TaskTriggerHandler {
         task.WhatId.getSobjectType() == Account.getSObjectType()
       ) {
         whatIdsRelatedToAccounts.add(task.WhatId);
-      } else {
-        return;
       }
+    }
+
+    if (whatIdsRelatedToAccounts.isEmpty()) {
+      return;
     }
     List<Account> accounts = countSpecificTasks(
       getUnitedStatesProspectAccounts(whatIdsRelatedToAccounts)

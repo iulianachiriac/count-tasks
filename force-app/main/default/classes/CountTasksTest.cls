@@ -163,7 +163,7 @@ public class CountTasksTest {
     Id accId = account.Id;
 
     Task openTsk = [
-      SELECT Type, Status
+      SELECT WhatId
       FROM Task
       WHERE WhatId != :accId AND Status != 'Completed' AND Type = 'Other'
       LIMIT 1

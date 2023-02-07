@@ -1,19 +1,23 @@
 public without sharing class TaskTriggerHandler {
   public static void updateRelatedAccounts(List<Task> tasks) {
-    Map<Id, Account> accountMap = countSpecificTasks(
-      getUnitedStatesProspectAccounts(tasks)
+    Set<Id> whatIdsRelatedToAccounts = new Set<Id>();
+    for (Task task : tasks) {
+      if (
+        task.WhatId <> null &&
+        task.WhatId.getSobjectType() == Account.getSObjectType()
+      ) {
+        whatIdsRelatedToAccounts.add(task.WhatId);
+      } else {
+        return;
+      }
+    }
+    List<Account> accounts = countSpecificTasks(
+      getUnitedStatesProspectAccounts(whatIdsRelatedToAccounts)
     );
-    update accountMap.values();
+    update accounts;
   }
 
-  public static List<Account> getUnitedStatesProspectAccounts(
-    List<Task> tasks
-  ) {
-    Set<Id> accIds = new Set<Id>();
-    for (Task task : tasks) {
-      accIds.add(task.whatId);
-    }
-
+  public static List<Account> getUnitedStatesProspectAccounts(Set<Id> whatIds) {
     Id recordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName()
       .get('United_States')
       .getRecordTypeId();
@@ -27,14 +31,17 @@ public without sharing class TaskTriggerHandler {
         Open_Tasks_Other__c,
         (SELECT WhatId, Type FROM Tasks WHERE isClosed = FALSE)
       FROM Account
-      WHERE Id IN :accIds AND RecordTypeId = :recordTypeId AND Type = 'Prospect'
+      WHERE
+        Id IN :whatIds
+        AND RecordTypeId = :recordTypeId
+        AND Type = 'Prospect'
     ];
 
     return accountsList;
   }
 
-  public static Map<Id, Account> countSpecificTasks(List<Account> accounts) {
-    Map<Id, Account> accountMap = new Map<Id, Account>();
+  public static List<Account> countSpecificTasks(List<Account> accounts) {
+    List<Account> accountsList = new List<Account>();
     for (Account acc : accounts) {
       Decimal callTasks = 0;
       Decimal emailTasks = 0;
@@ -60,8 +67,8 @@ public without sharing class TaskTriggerHandler {
       acc.Open_Tasks_Meeting__c = meetingTasks;
       acc.Open_Tasks_Other__c = otherTasks;
 
-      accountMap.put(acc.Id, acc);
+      accountsList.add(acc);
     }
-    return accountMap;
+    return accountsList;
   }
 }

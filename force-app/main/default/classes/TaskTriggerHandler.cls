@@ -1,30 +1,58 @@
 public without sharing class TaskTriggerHandler {
-  public static void updateRelatedAccounts(List<Task> tasks) {
-    Set<Id> whatIdsRelatedToAccounts = new Set<Id>();
-    for (Task task : tasks) {
-      if (
-        task.WhatId <> null &&
-        task.WhatId.getSobjectType() == Account.getSObjectType()
-      ) {
-        whatIdsRelatedToAccounts.add(task.WhatId);
-      }
-    }
+  @testvisible
+  private static final Id recordTypeUS = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName()
+    .get('United_States')
+    .getRecordTypeId();
 
-    if (whatIdsRelatedToAccounts.isEmpty()) {
+  public static void handleAfterInsert(List<Task> newTasks) {
+    Set<Id> whatIds = filterTasks(newTasks);
+    if (whatIds.isEmpty()) {
       return;
     }
-    List<Account> accounts = countSpecificTasks(
-      getUnitedStatesProspectAccounts(whatIdsRelatedToAccounts)
+    List<Account> accountsToUpdate = setTaskCountValues(
+      getRelatedAccountsWithOpenTasks(whatIds)
     );
-    update accounts;
+    update accountsToUpdate;
   }
 
-  public static List<Account> getUnitedStatesProspectAccounts(Set<Id> whatIds) {
-    Id recordTypeId = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName()
-      .get('United_States')
-      .getRecordTypeId();
+  public static void handleAfterUpdate(
+    List<Task> oldTasks,
+    List<Task> newTasks
+  ) {
+    Set<Id> whatIds = filterTasks(newTasks);
+    whatIds.addAll(filterTasks(oldTasks));
+    if (whatIds.isEmpty()) {
+      return;
+    }
+    List<Account> accountsToUpdate = setTaskCountValues(
+      getRelatedAccountsWithOpenTasks(whatIds)
+    );
+    update accountsToUpdate;
+  }
 
-    List<Account> accountsList = [
+  public static void handleAfterDelete(List<Task> oldTasks) {
+    Set<Id> whatIds = filterTasks(oldTasks);
+    if (whatIds.isEmpty()) {
+      return;
+    }
+    List<Account> accountsToUpdate = setTaskCountValues(
+      getRelatedAccountsWithOpenTasks(whatIds)
+    );
+    update accountsToUpdate;
+  }
+
+  public static Set<Id> filterTasks(List<Task> tasks) {
+    Set<Id> whatIds = new Set<Id>();
+    for (Task task : tasks) {
+      if (task.WhatId?.getSobjectType() == Account.SObjectType) {
+        whatIds.add(task.WhatId);
+      }
+    }
+    return whatIds;
+  }
+
+  public static List<Account> getRelatedAccountsWithOpenTasks(Set<Id> whatIds) {
+    List<Account> accounts = [
       SELECT
         Id,
         Open_Tasks_Call__c,
@@ -35,15 +63,15 @@ public without sharing class TaskTriggerHandler {
       FROM Account
       WHERE
         Id IN :whatIds
-        AND RecordTypeId = :recordTypeId
+        AND RecordTypeId = :recordTypeUS
         AND Type = 'Prospect'
     ];
 
-    return accountsList;
+    return accounts;
   }
 
-  public static List<Account> countSpecificTasks(List<Account> accounts) {
-    List<Account> accountsList = new List<Account>();
+  public static List<Account> setTaskCountValues(List<Account> accounts) {
+    List<Account> accountsToUpdate = new List<Account>();
     for (Account acc : accounts) {
       Decimal callTasks = 0;
       Decimal emailTasks = 0;
@@ -69,8 +97,8 @@ public without sharing class TaskTriggerHandler {
       acc.Open_Tasks_Meeting__c = meetingTasks;
       acc.Open_Tasks_Other__c = otherTasks;
 
-      accountsList.add(acc);
+      accountsToUpdate.add(acc);
     }
-    return accountsList;
+    return accountsToUpdate;
   }
 }

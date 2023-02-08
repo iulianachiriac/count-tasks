@@ -12,15 +12,11 @@ public class CountTasksTest {
   private static void makeData() {
     List<Account> accounts = new List<Account>();
 
-    Id recordTypeIdUS = Schema.SObjectType.Account.getRecordTypeInfosByDeveloperName()
-      .get('United_States')
-      .getRecordTypeId();
-
     for (Integer i = 0; i < ACCOUNTS_NUMBER; i++) {
       Account acc = new Account(
         Name = 'Test Account ' + i,
         Type = 'Prospect',
-        RecordTypeId = recordTypeIdUS
+        RecordTypeId = TaskTriggerHandler.recordTypeUS
       );
       accounts.add(acc);
     }
@@ -62,14 +58,14 @@ public class CountTasksTest {
   @isTest
   private static void shouldHaveAccountsAndTasksInDatabase() {
     Assert.areEqual(
-      [SELECT COUNT() FROM Account],
       ACCOUNTS_NUMBER,
+      [SELECT COUNT() FROM Account],
       'Failed to get expected amount of Accounts'
     );
     Integer numberOfTaskTypes = 4;
     Assert.areEqual(
-      [SELECT COUNT() FROM Task],
       (ACCOUNTS_NUMBER * TASKS_NUMBER * numberOfTaskTypes),
+      [SELECT COUNT() FROM Task],
       'Failed to get expected amount of tasks'
     );
   }
@@ -84,9 +80,9 @@ public class CountTasksTest {
     insert tskOther;
 
     Assert.areEqual(
+      TASKS_NUMBER + 1,
       [SELECT Open_Tasks_Other__c FROM Account WHERE Id = :accId]
       .Open_Tasks_Other__c,
-      TASKS_NUMBER + 1,
       'Failed to get expected amount of open tasks on Account after insert'
     );
   }
@@ -108,9 +104,9 @@ public class CountTasksTest {
     update openTsk;
 
     Assert.areEqual(
+      TASKS_NUMBER - 1,
       [SELECT Open_Tasks_Email__c FROM Account WHERE Id = :accId]
       .Open_Tasks_Email__c,
-      TASKS_NUMBER - 1,
       'Failed to get expected amount of open tasks on Account after closing a task'
     );
 
@@ -119,9 +115,9 @@ public class CountTasksTest {
     update openTsk;
 
     Assert.areEqual(
+      TASKS_NUMBER,
       [SELECT Open_Tasks_Email__c FROM Account WHERE Id = :accId]
       .Open_Tasks_Email__c,
-      TASKS_NUMBER,
       'Failed to get expected amount of open tasks on Account after re-opening a task'
     );
   }
@@ -140,23 +136,23 @@ public class CountTasksTest {
     ];
 
     Assert.areEqual(
+      TASKS_NUMBER,
       [SELECT Open_Tasks_Other__c FROM Account WHERE Id = :accId]
       .Open_Tasks_Other__c,
-      TASKS_NUMBER,
       'Failed to get expected amount of open tasks on Account before delete'
     );
 
     delete openTsk;
 
     Assert.areEqual(
+      TASKS_NUMBER - 1,
       [SELECT Open_Tasks_Other__c FROM Account WHERE Id = :accId]
       .Open_Tasks_Other__c,
-      TASKS_NUMBER - 1,
       'Failed to get expected amount of open tasks on Account after delete'
     );
   }
 
-  //reparenting a task to a new account scenario (wrong count)
+  //reparenting a task to a new account scenario
   @isTest
   private static void reparentingTask() {
     Account account = [SELECT Id FROM Account LIMIT 1];
@@ -173,11 +169,18 @@ public class CountTasksTest {
 
     update openTsk;
 
-    //the count is done wrong on the first related Account
-    Assert.areNotEqual(
+    //count on first related Account
+      Assert.areEqual(
+      TASKS_NUMBER - 1,
       [SELECT Open_Tasks_Other__c FROM Account WHERE Id = :firstParent]
-      .Open_Tasks_Other__c,
-      TASKS_NUMBER - 1
+      .Open_Tasks_Other__c,'Failed to get expected amount of open tasks on first related Account'
+    );
+      
+      //count on current related Account
+      Assert.areEqual(
+      TASKS_NUMBER + 1,
+      [SELECT Open_Tasks_Other__c FROM Account WHERE Id = :accId]
+      .Open_Tasks_Other__c,'Failed to get expected amount of open tasks on current related Account'
     );
   }
 }

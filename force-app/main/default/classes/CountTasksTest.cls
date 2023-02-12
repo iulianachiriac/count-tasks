@@ -5,8 +5,8 @@
  */
 @isTest
 public class CountTasksTest {
-  private static final Integer ACCOUNTS_NUMBER = 5;
-  private static final Integer TASKS_NUMBER = 5;
+  private static final Integer ACCOUNTS_NUMBER = 180;
+  private static final Integer TASKS_NUMBER = 13;
 
   @TestSetup
   private static void makeData() {
@@ -170,17 +170,19 @@ public class CountTasksTest {
     update openTsk;
 
     //count on first related Account
-      Assert.areEqual(
+    Assert.areEqual(
       TASKS_NUMBER - 1,
       [SELECT Open_Tasks_Other__c FROM Account WHERE Id = :firstParent]
-      .Open_Tasks_Other__c,'Failed to get expected amount of open tasks on first related Account'
+      .Open_Tasks_Other__c,
+      'Failed to get expected amount of open tasks on first related Account'
     );
-      
-      //count on current related Account
-      Assert.areEqual(
+
+    //count on current related Account
+    Assert.areEqual(
       TASKS_NUMBER + 1,
       [SELECT Open_Tasks_Other__c FROM Account WHERE Id = :accId]
-      .Open_Tasks_Other__c,'Failed to get expected amount of open tasks on current related Account'
+      .Open_Tasks_Other__c,
+      'Failed to get expected amount of open tasks on current related Account'
     );
   }
 }

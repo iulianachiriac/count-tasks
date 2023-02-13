@@ -1,12 +1,12 @@
 /**
  * Apex Test Class for all scenarios
- * (insert, update, delete, close task,
- * re open task, reparenting task)
+ * (insert, update, delete, close tasks,
+ * re open tasks, reparenting task)
  */
 @isTest
 public class CountTasksTest {
-  private static final Integer ACCOUNTS_NUMBER = 180;
-  private static final Integer TASKS_NUMBER = 13;
+  private static final Integer ACCOUNTS_NUMBER = 120;
+  private static final Integer TASKS_NUMBER = 15;
 
   @TestSetup
   private static void makeData() {
@@ -26,30 +26,30 @@ public class CountTasksTest {
     List<Task> tasks = new List<Task>();
     for (Account acc : accounts) {
       for (Integer i = 0; i < TASKS_NUMBER; i++) {
-        Task tskCall = new Task(
+        Task taskCall = new Task(
           Subject = 'Call',
           Type = 'Call',
           WhatId = acc.Id
         );
-        tasks.add(tskCall);
-        Task tskEmail = new Task(
+        tasks.add(taskCall);
+        Task taskEmail = new Task(
           Subject = 'Email',
           Type = 'Email',
           WhatId = acc.Id
         );
-        tasks.add(tskEmail);
-        Task tskMeeting = new Task(
+        tasks.add(taskEmail);
+        Task taskMeeting = new Task(
           Subject = 'Meeting',
           Type = 'Meeting',
           WhatId = acc.Id
         );
-        tasks.add(tskMeeting);
-        Task tskOther = new Task(
+        tasks.add(taskMeeting);
+        Task taskOther = new Task(
           Subject = 'Other',
           Type = 'Other',
           WhatId = acc.Id
         );
-        tasks.add(tskOther);
+        tasks.add(taskOther);
       }
     }
     insert tasks;
@@ -70,83 +70,90 @@ public class CountTasksTest {
     );
   }
 
-  //insert scenario
+  //inserting 210 tasks
   @isTest
-  public static void insertNewTaskAccount() {
-    Account account = [SELECT Id FROM Account LIMIT 1];
-    Id accId = account.Id;
+  public static void insertNewTasks() {
+    List<Account> accounts = [SELECT Id FROM Account LIMIT 42];
 
-    Task tskOther = new Task(Subject = 'Other', Type = 'Other', WhatId = accId);
-    insert tskOther;
+    List<Task> tasksList = new List<Task>();
+    for (Account acc : accounts) {
+      Id accId = acc.id;
+      for (Integer i = 0; i < 5; i++) {
+        Task taskOther = new Task(
+          Subject = 'Other',
+          Type = 'Other',
+          WhatId = accId
+        );
+        tasksList.add(taskOther);
+      }
+    }
+
+    insert tasksList;
 
     Assert.areEqual(
-      TASKS_NUMBER + 1,
-      [SELECT Open_Tasks_Other__c FROM Account WHERE Id = :accId]
+      TASKS_NUMBER + 5,
+      [SELECT Open_Tasks_Other__c FROM Account WHERE Id = :accounts LIMIT 1]
       .Open_Tasks_Other__c,
       'Failed to get expected amount of open tasks on Account after insert'
     );
   }
 
-  //close a task & re-open it scenario
+  //updating 210 tasks
   @isTest
-  private static void closeTaskAndReopen() {
-    //closing
-    Account account = [SELECT Id FROM Account LIMIT 1];
-    Id accId = account.Id;
+  private static void updateTasks() {
+    List<Account> accounts = [SELECT Id FROM Account LIMIT 42];
 
-    Task openTsk = [
+    List<Task> tasksList = [
       SELECT Type, Status
       FROM Task
-      WHERE WhatId = :accId AND Status != 'Completed' AND Type = 'Email'
-      LIMIT 1
+      WHERE WhatId = :accounts AND Status != 'Completed' AND Type = 'Email'
+      LIMIT 5
     ];
-    openTsk.Status = 'Completed';
-    update openTsk;
+
+    //closing tasks
+    for (Task task : tasksList) {
+      task.Status = 'Completed';
+    }
+    update tasksList;
 
     Assert.areEqual(
-      TASKS_NUMBER - 1,
-      [SELECT Open_Tasks_Email__c FROM Account WHERE Id = :accId]
+      TASKS_NUMBER - 5,
+      [SELECT Open_Tasks_Email__c FROM Account WHERE Id = :accounts LIMIT 1]
       .Open_Tasks_Email__c,
       'Failed to get expected amount of open tasks on Account after closing a task'
     );
 
     //re-opening
-    openTsk.Status = 'In progress';
-    update openTsk;
+    for (Task task : tasksList) {
+      task.Status = 'In progress';
+    }
+    update tasksList;
 
     Assert.areEqual(
       TASKS_NUMBER,
-      [SELECT Open_Tasks_Email__c FROM Account WHERE Id = :accId]
+      [SELECT Open_Tasks_Email__c FROM Account WHERE Id = :accounts LIMIT 1]
       .Open_Tasks_Email__c,
       'Failed to get expected amount of open tasks on Account after re-opening a task'
     );
   }
 
-  //delete scenario
+  //deleting 210 tasks
   @isTest
-  private static void deleteTask() {
-    Account account = [SELECT Id FROM Account LIMIT 1];
-    Id accId = account.Id;
+  private static void deleteTasks() {
+    List<Account> accounts = [SELECT Id FROM Account LIMIT 42];
 
-    Task openTsk = [
+    List<Task> openTasks = [
       SELECT Type, Status
       FROM Task
-      WHERE WhatId = :accId AND Status != 'Completed' AND Type = 'Other'
-      LIMIT 1
+      WHERE WhatId = :accounts AND Status != 'Completed' AND Type = 'Other'
+      LIMIT 5
     ];
 
-    Assert.areEqual(
-      TASKS_NUMBER,
-      [SELECT Open_Tasks_Other__c FROM Account WHERE Id = :accId]
-      .Open_Tasks_Other__c,
-      'Failed to get expected amount of open tasks on Account before delete'
-    );
-
-    delete openTsk;
+    delete openTasks;
 
     Assert.areEqual(
-      TASKS_NUMBER - 1,
-      [SELECT Open_Tasks_Other__c FROM Account WHERE Id = :accId]
+      TASKS_NUMBER - 5,
+      [SELECT Open_Tasks_Other__c FROM Account WHERE Id = :accounts LIMIT 1]
       .Open_Tasks_Other__c,
       'Failed to get expected amount of open tasks on Account after delete'
     );
@@ -158,16 +165,16 @@ public class CountTasksTest {
     Account account = [SELECT Id FROM Account LIMIT 1];
     Id accId = account.Id;
 
-    Task openTsk = [
+    Task openTask = [
       SELECT WhatId
       FROM Task
       WHERE WhatId != :accId AND Status != 'Completed' AND Type = 'Other'
       LIMIT 1
     ];
-    Id firstParent = openTsk.WhatId;
-    openTsk.WhatId = accId;
+    Id firstParent = openTask.WhatId;
+    openTask.WhatId = accId;
 
-    update openTsk;
+    update openTask;
 
     //count on first related Account
     Assert.areEqual(

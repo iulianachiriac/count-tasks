@@ -4,12 +4,15 @@
  * re open tasks, reparenting tasks)
  */
 @isTest
-public class CountTasksTest {
+public class TaskTriggerTest {
+  private static final Integer ACCOUNTS_NUMBER = 100;
+  private static final Integer TASKS_NUMBER = 3;
+
   @TestSetup
   private static void makeData() {
     List<Account> accounts = new List<Account>();
 
-    for (Integer i = 0; i < 100; i++) {
+    for (Integer i = 0; i < ACCOUNTS_NUMBER; i++) {
       Account acc = new Account(
         Name = 'Test Account ' + i,
         Type = 'Prospect',
@@ -17,32 +20,25 @@ public class CountTasksTest {
       );
       accounts.add(acc);
     }
-
+    Test.startTest();
     insert accounts;
+    Test.stopTest();
   }
 
   //inserting >200 tasks
   @isTest
-  public static void insertNewTasks() {
+  private static void insertNewTasks() {
     List<Account> accounts = [
       SELECT Id
       FROM Account
-      LIMIT 42
+      LIMIT :ACCOUNTS_NUMBER
     ];
 
-    List<Task> tasks = new List<Task>();
-    for (Account acc : accounts) {
-      for (Integer i = 0; i < 5; i++) {
-        Task taskOther = new Task(
-          Subject = 'Other',
-          Type = 'Other',
-          WhatId = acc.id
-        );
-        tasks.add(taskOther);
-      }
-    }
-
-    insert tasks;
+    List<Task> tasks = TaskTriggerHelperTest.createTasks(
+      accounts,
+      'Other',
+      TASKS_NUMBER
+    );
 
     accounts = [
       SELECT Id, Open_Tasks_Other__c
@@ -52,7 +48,7 @@ public class CountTasksTest {
 
     for (Account a : accounts) {
       Assert.areEqual(
-        5,
+        TASKS_NUMBER,
         a.Open_Tasks_Other__c,
         'Failed to get expected amount of open tasks on Account after insert'
       );
@@ -62,26 +58,20 @@ public class CountTasksTest {
   //updating >200 tasks
   @isTest
   private static void updateTasks() {
-    List<Account> accounts = [SELECT Id FROM Account LIMIT 42];
+    List<Account> accounts = [SELECT Id FROM Account LIMIT :ACCOUNTS_NUMBER];
 
-    List<Task> tasks = new List<Task>();
-    for (Account acc : accounts) {
-      for (Integer i = 0; i < 5; i++) {
-        Task taskEmail = new Task(
-          Subject = 'Email',
-          Type = 'Email',
-          WhatId = acc.id
-        );
-        tasks.add(taskEmail);
-      }
-    }
-
-    insert tasks;
+    List<Task> tasks = TaskTriggerHelperTest.createTasks(
+      accounts,
+      'Email',
+      TASKS_NUMBER
+    );
 
     //closing tasks
     for (Task task : tasks) {
       task.Status = 'Completed';
     }
+
+    Test.startTest();
     update tasks;
 
     accounts = [
@@ -103,6 +93,7 @@ public class CountTasksTest {
       task.Status = 'In progress';
     }
     update tasks;
+    Test.stopTest();
 
     accounts = [
       SELECT Id, Open_Tasks_Email__c
@@ -112,7 +103,7 @@ public class CountTasksTest {
 
     for (Account acc : accounts) {
       Assert.areEqual(
-        5,
+        TASKS_NUMBER,
         acc.Open_Tasks_Email__c,
         'Failed to get expected amount of open tasks on Account after re-opening tasks'
       );
@@ -125,23 +116,18 @@ public class CountTasksTest {
     List<Account> accounts = [
       SELECT Id
       FROM Account
-      LIMIT 42
+      LIMIT :ACCOUNTS_NUMBER
     ];
 
-    List<Task> tasks = new List<Task>();
-    for (Account acc : accounts) {
-      for (Integer i = 0; i < 5; i++) {
-        Task taskMeeting = new Task(
-          Subject = 'Meeting',
-          Type = 'Meeting',
-          WhatId = acc.Id
-        );
-        tasks.add(taskMeeting);
-      }
-    }
+    List<Task> tasks = TaskTriggerHelperTest.createTasks(
+      accounts,
+      'Meeting',
+      TASKS_NUMBER
+    );
 
-    insert tasks;
+    Test.startTest();
     delete tasks;
+    Test.stopTest();
 
     accounts = [
       SELECT Id, Open_Tasks_Meeting__c
@@ -164,16 +150,11 @@ public class CountTasksTest {
     Account firstAccount = [SELECT Id FROM Account LIMIT 1];
     Id firstAccId = firstAccount.Id;
 
-    List<Task> openTasks = new List<Task>();
-    for (Integer i = 0; i < 210; i++) {
-      Task taskCall = new Task(
-        Subject = 'Call',
-        Type = 'Call',
-        WhatId = firstAccId
-      );
-      openTasks.add(taskCall);
-    }
-    insert openTasks;
+    List<Task> tasks = TaskTriggerHelperTest.createTasksOnSingleAccount(
+      firstAccount,
+      'Call',
+      (ACCOUNTS_NUMBER * TASKS_NUMBER)
+    );
 
     Account secondAccount = [
       SELECT Id
@@ -183,10 +164,13 @@ public class CountTasksTest {
     ];
     Id secondAccId = secondAccount.Id;
 
-    for (Task task : openTasks) {
+    for (Task task : tasks) {
       task.WhatId = secondAccId;
     }
-    update openTasks;
+
+    Test.startTest();
+    update tasks;
+    Test.stopTest();
 
     //count on first related Account
     Assert.areEqual(
@@ -197,7 +181,7 @@ public class CountTasksTest {
     );
     //count on current related Account
     Assert.areEqual(
-      210,
+      ACCOUNTS_NUMBER * TASKS_NUMBER,
       [SELECT Open_Tasks_Call__c FROM Account WHERE Id = :secondAccId]
       .Open_Tasks_Call__c,
       'Failed to get expected amount of open tasks on current related Account'

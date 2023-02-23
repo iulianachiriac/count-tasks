@@ -7,8 +7,4 @@ trigger TaskTrigger on Task(after insert, after update, after delete) {
     TaskTriggerHandler.handleAfterDelete(Trigger.old);
   }
 
-  if (!Trigger.isAfter) {
-    return;
-  }
-
 }

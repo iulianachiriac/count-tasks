@@ -34,11 +34,7 @@ public class TaskTriggerTest {
       LIMIT :ACCOUNTS_NUMBER
     ];
 
-    List<Task> tasks = TaskTriggerHelperTest.createTasks(
-      accounts,
-      'Other',
-      TASKS_NUMBER
-    );
+    List<Task> tasks = createTasks(accounts, 'Other', TASKS_NUMBER);
 
     accounts = [
       SELECT Id, Open_Tasks_Other__c
@@ -60,11 +56,7 @@ public class TaskTriggerTest {
   private static void updateTasks() {
     List<Account> accounts = [SELECT Id FROM Account LIMIT :ACCOUNTS_NUMBER];
 
-    List<Task> tasks = TaskTriggerHelperTest.createTasks(
-      accounts,
-      'Email',
-      TASKS_NUMBER
-    );
+    List<Task> tasks = createTasks(accounts, 'Email', TASKS_NUMBER);
 
     //closing tasks
     for (Task task : tasks) {
@@ -119,11 +111,7 @@ public class TaskTriggerTest {
       LIMIT :ACCOUNTS_NUMBER
     ];
 
-    List<Task> tasks = TaskTriggerHelperTest.createTasks(
-      accounts,
-      'Meeting',
-      TASKS_NUMBER
-    );
+    List<Task> tasks = createTasks(accounts, 'Meeting', TASKS_NUMBER);
 
     Test.startTest();
     delete tasks;
@@ -147,10 +135,10 @@ public class TaskTriggerTest {
   //reparenting >200 Tasks
   @isTest
   private static void reparentingTasks() {
-    Account firstAccount = [SELECT Id FROM Account LIMIT 1];
-    Id firstAccId = firstAccount.Id;
+    List<Account> firstAccount = [SELECT Id FROM Account LIMIT 1];
+    Id firstAccId = firstAccount[0].Id;
 
-    List<Task> tasks = TaskTriggerHelperTest.createTasksOnSingleAccount(
+    List<Task> tasks = createTasks(
       firstAccount,
       'Call',
       (ACCOUNTS_NUMBER * TASKS_NUMBER)
@@ -186,5 +174,21 @@ public class TaskTriggerTest {
       .Open_Tasks_Call__c,
       'Failed to get expected amount of open tasks on current related Account'
     );
+  }
+
+  private static List<Task> createTasks(
+    List<Account> accounts,
+    String taskType,
+    Integer numOfTasks
+  ) {
+    List<Task> tasks = new List<Task>();
+    for (Account acc : accounts) {
+      for (Integer i = 0; i < numOfTasks; i++) {
+        Task newTask = new Task(Type = taskType, WhatId = acc.id);
+        tasks.add(newTask);
+      }
+    }
+    insert tasks;
+    return tasks;
   }
 }

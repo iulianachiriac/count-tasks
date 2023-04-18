@@ -298,7 +298,7 @@
         </connector>
         <filterLogic>and</filterLogic>
         <filters>
-            <field>AccountId</field>
+            <field>WhatId</field>
             <operator>EqualTo</operator>
             <value>
                 <elementReference>$Record.AccountId</elementReference>
@@ -346,7 +346,7 @@
             <field>Id</field>
             <operator>EqualTo</operator>
             <value>
-                <elementReference>$Record.AccountId</elementReference>
+                <elementReference>$Record.WhatId</elementReference>
             </value>
         </filters>
         <filters>

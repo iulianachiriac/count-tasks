@@ -2,10 +2,26 @@
 <Flow xmlns="http://soap.sforce.com/2006/04/metadata">
     <apiVersion>56.0</apiVersion>
     <assignments>
+        <name>Add_accounts_to_a_list</name>
+        <label>Add accounts to a list</label>
+        <locationX>176</locationX>
+        <locationY>1247</locationY>
+        <assignmentItems>
+            <assignToReference>AccountsToUpdate</assignToReference>
+            <operator>Add</operator>
+            <value>
+                <elementReference>Loop_through_Accounts</elementReference>
+            </value>
+        </assignmentItems>
+        <connector>
+            <targetReference>Get_Open_Call_Tasks</targetReference>
+        </connector>
+    </assignments>
+    <assignments>
         <name>Assign_open_tasks_lists_size</name>
         <label>Assign open tasks lists size</label>
         <locationX>176</locationX>
-        <locationY>935</locationY>
+        <locationY>1847</locationY>
         <assignmentItems>
             <assignToReference>NumberOfCalls</assignToReference>
             <operator>AssignCount</operator>
@@ -35,7 +51,7 @@
             </value>
         </assignmentItems>
         <connector>
-            <targetReference>Get_RecordType</targetReference>
+            <targetReference>Update_Account_Record</targetReference>
         </connector>
     </assignments>
     <collectionProcessors>
@@ -43,7 +59,7 @@
         <elementSubtype>FilterCollectionProcessor</elementSubtype>
         <label>Get Open Call Tasks</label>
         <locationX>176</locationX>
-        <locationY>455</locationY>
+        <locationY>1367</locationY>
         <assignNextValueToReference>currentItem_Get_Open_Email_Tasks</assignNextValueToReference>
         <collectionProcessorType>FilterCollectionProcessor</collectionProcessorType>
         <collectionReference>Get_Open_Tasks_on_Account</collectionReference>
@@ -64,7 +80,7 @@
         <elementSubtype>FilterCollectionProcessor</elementSubtype>
         <label>Get Open Email Tasks</label>
         <locationX>176</locationX>
-        <locationY>575</locationY>
+        <locationY>1487</locationY>
         <assignNextValueToReference>currentItem_Get_Open_Email_Tasks</assignNextValueToReference>
         <collectionProcessorType>FilterCollectionProcessor</collectionProcessorType>
         <collectionReference>Get_Open_Tasks_on_Account</collectionReference>
@@ -85,7 +101,7 @@
         <elementSubtype>FilterCollectionProcessor</elementSubtype>
         <label>Get Open Meeting Tasks</label>
         <locationX>176</locationX>
-        <locationY>695</locationY>
+        <locationY>1607</locationY>
         <assignNextValueToReference>currentItem_Get_Open_Meeting_Tasks</assignNextValueToReference>
         <collectionProcessorType>FilterCollectionProcessor</collectionProcessorType>
         <collectionReference>Get_Open_Tasks_on_Account</collectionReference>
@@ -106,7 +122,7 @@
         <elementSubtype>FilterCollectionProcessor</elementSubtype>
         <label>Get Open Other Tasks</label>
         <locationX>176</locationX>
-        <locationY>815</locationY>
+        <locationY>1727</locationY>
         <assignNextValueToReference>currentItem_Get_Open_Other_Tasks</assignNextValueToReference>
         <collectionProcessorType>FilterCollectionProcessor</collectionProcessorType>
         <collectionReference>Get_Open_Tasks_on_Account</collectionReference>
@@ -122,9 +138,45 @@
             <targetReference>Assign_open_tasks_lists_size</targetReference>
         </connector>
     </collectionProcessors>
+    <decisions>
+        <name>Check_if_AccId_WhatId</name>
+        <label>Check if AccId=WhatId</label>
+        <locationX>352</locationX>
+        <locationY>815</locationY>
+        <defaultConnectorLabel>Default Outcome</defaultConnectorLabel>
+        <rules>
+            <name>Yes</name>
+            <conditionLogic>and</conditionLogic>
+            <conditions>
+                <leftValueReference>Loop_through_Accounts.Id</leftValueReference>
+                <operator>EqualTo</operator>
+                <rightValue>
+                    <elementReference>$Record.WhatId</elementReference>
+                </rightValue>
+            </conditions>
+            <connector>
+                <targetReference>Loop_through_Accounts</targetReference>
+            </connector>
+            <label>Yes</label>
+        </rules>
+    </decisions>
     <environments>Default</environments>
     <interviewLabel>Roll up Tasks On Accounts (after insert-after update) {!$Flow.CurrentDateTime}</interviewLabel>
     <label>Roll up Tasks On Accounts (after insert-after update)</label>
+    <loops>
+        <name>Loop_through_Accounts</name>
+        <label>Loop through Accounts</label>
+        <locationX>176</locationX>
+        <locationY>695</locationY>
+        <collectionReference>Get_Accounts</collectionReference>
+        <iterationOrder>Asc</iterationOrder>
+        <nextValueConnector>
+            <targetReference>Check_if_AccId_WhatId</targetReference>
+        </nextValueConnector>
+        <noMoreValuesConnector>
+            <targetReference>Add_accounts_to_a_list</targetReference>
+        </noMoreValuesConnector>
+    </loops>
     <processMetadataValues>
         <name>BuilderType</name>
         <value>
@@ -145,20 +197,48 @@
     </processMetadataValues>
     <processType>AutoLaunchedFlow</processType>
     <recordLookups>
+        <name>Get_Accounts</name>
+        <label>Get Accounts</label>
+        <locationX>176</locationX>
+        <locationY>575</locationY>
+        <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
+        <connector>
+            <targetReference>Loop_through_Accounts</targetReference>
+        </connector>
+        <filterLogic>and</filterLogic>
+        <filters>
+            <field>Type</field>
+            <operator>EqualTo</operator>
+            <value>
+                <stringValue>Prospect</stringValue>
+            </value>
+        </filters>
+        <filters>
+            <field>RecordTypeId</field>
+            <operator>EqualTo</operator>
+            <value>
+                <elementReference>Get_RecordType.Id</elementReference>
+            </value>
+        </filters>
+        <getFirstRecordOnly>false</getFirstRecordOnly>
+        <object>Account</object>
+        <storeOutputAutomatically>true</storeOutputAutomatically>
+    </recordLookups>
+    <recordLookups>
         <name>Get_Open_Tasks_on_Account</name>
         <label>Get Open Tasks on Account</label>
         <locationX>176</locationX>
         <locationY>335</locationY>
         <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
         <connector>
-            <targetReference>Get_Open_Call_Tasks</targetReference>
+            <targetReference>Get_RecordType</targetReference>
         </connector>
         <filterLogic>and</filterLogic>
         <filters>
-            <field>AccountId</field>
+            <field>WhatId</field>
             <operator>EqualTo</operator>
             <value>
-                <elementReference>$Record.AccountId</elementReference>
+                <elementReference>$Record.WhatId</elementReference>
             </value>
         </filters>
         <filters>
@@ -176,10 +256,10 @@
         <name>Get_RecordType</name>
         <label>Get RecordType</label>
         <locationX>176</locationX>
-        <locationY>1055</locationY>
+        <locationY>455</locationY>
         <assignNullValuesIfNoRecordsFound>false</assignNullValuesIfNoRecordsFound>
         <connector>
-            <targetReference>Update_Account_Record</targetReference>
+            <targetReference>Get_Accounts</targetReference>
         </connector>
         <filterLogic>and</filterLogic>
         <filters>
@@ -197,54 +277,8 @@
         <name>Update_Account_Record</name>
         <label>Update Account Record</label>
         <locationX>176</locationX>
-        <locationY>1175</locationY>
-        <filterLogic>and</filterLogic>
-        <filters>
-            <field>Id</field>
-            <operator>EqualTo</operator>
-            <value>
-                <elementReference>$Record.AccountId</elementReference>
-            </value>
-        </filters>
-        <filters>
-            <field>Type</field>
-            <operator>EqualTo</operator>
-            <value>
-                <stringValue>Prospect</stringValue>
-            </value>
-        </filters>
-        <filters>
-            <field>RecordTypeId</field>
-            <operator>EqualTo</operator>
-            <value>
-                <elementReference>Get_RecordType.Id</elementReference>
-            </value>
-        </filters>
-        <inputAssignments>
-            <field>Open_Tasks_Call__c</field>
-            <value>
-                <elementReference>NumberOfCalls</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>Open_Tasks_Email__c</field>
-            <value>
-                <elementReference>NumberOfEmails</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>Open_Tasks_Meeting__c</field>
-            <value>
-                <elementReference>NumberOfMeetings</elementReference>
-            </value>
-        </inputAssignments>
-        <inputAssignments>
-            <field>Open_Tasks_Other__c</field>
-            <value>
-                <elementReference>NumberOfOthers</elementReference>
-            </value>
-        </inputAssignments>
-        <object>Account</object>
+        <locationY>1967</locationY>
+        <inputReference>AccountsToUpdate</inputReference>
     </recordUpdates>
     <start>
         <locationX>50</locationX>
@@ -254,7 +288,7 @@
         </connector>
         <filterLogic>and</filterLogic>
         <filters>
-            <field>AccountId</field>
+            <field>WhatId</field>
             <operator>IsNull</operator>
             <value>
                 <booleanValue>false</booleanValue>
@@ -265,6 +299,14 @@
         <triggerType>RecordAfterSave</triggerType>
     </start>
     <status>Active</status>
+    <variables>
+        <name>AccountsToUpdate</name>
+        <dataType>SObject</dataType>
+        <isCollection>true</isCollection>
+        <isInput>false</isInput>
+        <isOutput>false</isOutput>
+        <objectType>Account</objectType>
+    </variables>
     <variables>
         <name>currentItem_Get_Open_Email_Tasks</name>
         <dataType>SObject</dataType>

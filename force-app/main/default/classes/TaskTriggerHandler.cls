@@ -1,4 +1,4 @@
-public without sharing class TaskTriggerHandler {
+public without sharing class TaskTriggerHandler extends TriggerHandler {
   private static final String EMAIL_TASK = 'Email';
   private static final String CALL_TASK = 'Call';
   private static final String MEETING_TASK = 'Meeting';
@@ -8,8 +8,8 @@ public without sharing class TaskTriggerHandler {
     .get('United_States')
     .getRecordTypeId();
 
-  public static void handleAfterInsert(List<Task> newTasks) {
-    Set<Id> whatIds = filterTasks(newTasks);
+  public override void afterInsert() {
+    Set<Id> whatIds = filterTasks(Trigger.new);
     if (whatIds.isEmpty()) {
       return;
     }
@@ -19,12 +19,9 @@ public without sharing class TaskTriggerHandler {
     update accountsToUpdate;
   }
 
-  public static void handleAfterUpdate(
-    List<Task> oldTasks,
-    List<Task> newTasks
-  ) {
-    Set<Id> whatIds = filterTasks(newTasks);
-    whatIds.addAll(filterTasks(oldTasks));
+  public override void afterUpdate() {
+    Set<Id> whatIds = filterTasks(Trigger.new);
+    whatIds.addAll(filterTasks(Trigger.old));
     if (whatIds.isEmpty()) {
       return;
     }
@@ -34,8 +31,8 @@ public without sharing class TaskTriggerHandler {
     update accountsToUpdate;
   }
 
-  public static void handleAfterDelete(List<Task> oldTasks) {
-    Set<Id> whatIds = filterTasks(oldTasks);
+  public override void afterDelete() {
+    Set<Id> whatIds = filterTasks(Trigger.old);
     if (whatIds.isEmpty()) {
       return;
     }
